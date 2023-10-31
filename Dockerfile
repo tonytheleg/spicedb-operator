@@ -1,4 +1,4 @@
-FROM quay.io/app-sre/boilerplate:image-v3.0.6 AS builder
+FROM registry.ci.openshift.org/openshift/release:rhel-8-release-golang-1.20-openshift-4.14 AS builder
 WORKDIR /go/src/app
 
 COPY go.mod go.sum ./

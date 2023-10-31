@@ -1,12 +1,13 @@
-FROM golang:1.20-alpine3.18 AS builder
+FROM quay.io/app-sre/boilerplate:image-v3.0.6 AS builder
 WORKDIR /go/src/app
-ENV CGO_ENABLED=0
 
 COPY go.mod go.sum ./
 COPY . .
-RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg/mod go build ./cmd/...
+RUN --mount=type=cache,target=/root/.cache/go-build --mount=type=cache,target=/go/pkg/mod go mod download && \
+    go mod tidy && \
+    GOEXPERIMENT=strictfipsruntime,boringcrypto GOOS=linux GOARCH=amd64 CGO_ENABLED=1 GOFLAGS="" go build -tags=fips_enabled -gcflags=all=-trimpath=/go -asmflags=all=-trimpath=/go ./cmd/...
 
-FROM alpine:3.18.2
+FROM FROM registry.access.redhat.com/ubi8/ubi-minimal:8.8-1072.1697626218
 
 COPY --from=builder /go/src/app/validated-update-graph.yaml /opt/operator/config.yaml
 COPY --from=builder /go/src/app/spicedb-operator /usr/local/bin/spicedb-operator
